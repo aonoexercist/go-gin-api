@@ -2,13 +2,19 @@ package routes
 
 import (
 	"go-gin-api/controllers"
+	"go-gin-api/controllers/auth"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(r *gin.Engine) {
-	api := r.Group("/api")
+	authApi := r.Group("/auth")
+	{
+		authApi.POST("/register", auth.Register)
+		authApi.POST("/login", auth.Login)
+	}
 
+	api := r.Group("/api")
 	{
 		api.POST("/todos", controllers.CreateTodo)
 		api.GET("/todos", controllers.GetTodos)
