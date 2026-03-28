@@ -9,11 +9,13 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 
+		// 1. Check if token exists
 		if tokenString == "" {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Missing token"})
 			return
 		}
 
+		// 2. Validate token (your custom logic here)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})

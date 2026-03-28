@@ -15,6 +15,7 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	api := r.Group("/api")
+	api.Use(auth.AuthMiddleware())
 	{
 		api.POST("/todos", controllers.CreateTodo)
 		api.GET("/todos", controllers.GetTodos)
