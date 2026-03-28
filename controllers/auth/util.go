@@ -20,10 +20,20 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-func GenerateToken(userID uint) (string, error) {
+func GenerateAccessToken(userID uint) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"exp":     time.Now().Add(15 * time.Minute).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtKey)
+}
+
+func GenerateRefreshToken(sessionID uint) (string, error) {
+	claims := jwt.MapClaims{
+		"session_id": sessionID,
+		"exp":        time.Now().Add(7 * 24 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
