@@ -7,28 +7,21 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.GetHeader("Authorization")
-
-		// 1. Check if token exists
-		if tokenString == "" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Missing token"})
+		tokenStr, err := c.Cookie("access_token")
+		if err != nil {
+			c.AbortWithStatus(401)
 			return
 		}
 
-		// 2. Validate token (your custom logic here)
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
 
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token"})
+			c.AbortWithStatus(401)
 			return
 		}
 
 		c.Next()
 	}
-}
-
-func Protected(c *gin.Context) {
-	c.JSON(200, gin.H{"message": "You are authorized 🔐"})
 }
