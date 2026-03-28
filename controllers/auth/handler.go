@@ -4,9 +4,8 @@ import (
 	"go-gin-api/config"
 	"go-gin-api/models"
 
-	// "net/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func Register(c *gin.Context) {
@@ -46,9 +45,72 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, _ := GenerateToken(user.ID)
+	accessToken, _ := GenerateAccessToken(user.ID)
+	refreshToken, _ := GenerateRefreshToken(user.ID)
+
+	SetAuthCookies(c, accessToken, refreshToken)
 
 	c.JSON(200, gin.H{
-		"token": token,
+		"message": "Login successful",
 	})
+}
+
+func Refresh(c *gin.Context) {
+	oldToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(401, gin.H{"error": "No token"})
+		return
+	}
+
+	token, err := jwt.Parse(oldToken, func(t *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		c.JSON(401, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	sessionID := uint(claims["session_id"].(float64))
+
+	var session models.Session
+	config.DB.First(&session, sessionID)
+
+	// 🔥 Detect token reuse (VERY IMPORTANT)
+	if session.RefreshToken != oldToken {
+		// possible attack → revoke all sessions
+		config.DB.Where("user_id = ?", session.UserID).Delete(&models.Session{})
+		c.JSON(401, gin.H{"error": "Token reuse detected"})
+		return
+	}
+
+	// generate new tokens
+	newRefreshToken, _ := GenerateRefreshToken(session.ID)
+	newAccessToken, _ := GenerateAccessToken(session.UserID)
+
+	// rotate refresh token
+	session.RefreshToken = newRefreshToken
+	config.DB.Save(&session)
+
+	SetAuthCookies(c, newAccessToken, newRefreshToken)
+
+	c.JSON(200, gin.H{"message": "Refreshed"})
+}
+
+func Logout(c *gin.Context) {
+	token, _ := c.Cookie("refresh_token")
+
+	parsed, _ := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	claims := parsed.Claims.(jwt.MapClaims)
+	sessionID := uint(claims["session_id"].(float64))
+
+	config.DB.Delete(&models.Session{}, sessionID)
+
+	ClearCookies(c)
+
+	c.JSON(200, gin.H{"message": "Logged out"})
 }
