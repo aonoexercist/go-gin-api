@@ -1,4 +1,4 @@
-package controllers
+package todo
 
 import (
 	"go-gin-api/config"

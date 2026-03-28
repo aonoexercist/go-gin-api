@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"go-gin-api/controllers"
 	"go-gin-api/controllers/auth"
+	"go-gin-api/controllers/todo"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,10 +17,10 @@ func SetupRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 	api.Use(auth.AuthMiddleware())
 	{
-		api.POST("/todos", controllers.CreateTodo)
-		api.GET("/todos", controllers.GetTodos)
-		api.GET("/todos/:id", controllers.GetTodo)
-		api.PUT("/todos/:id", controllers.UpdateTodo)
-		api.DELETE("/todos/:id", controllers.DeleteTodo)
+		api.POST("/todos", todo.CreateTodo)
+		api.GET("/todos", todo.GetTodos)
+		api.GET("/todos/:id", todo.GetTodo)
+		api.PUT("/todos/:id", todo.UpdateTodo)
+		api.DELETE("/todos/:id", todo.DeleteTodo)
 	}
 }
