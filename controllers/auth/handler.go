@@ -4,6 +4,7 @@ import (
 	"go-gin-api/config"
 	"go-gin-api/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -55,8 +56,20 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	session := models.Session{
+		UserID:    user.ID,
+		UserAgent: c.Request.UserAgent(),
+		IPAddress: c.ClientIP(),
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+	}
+
+	config.DB.Create(&session)
+
 	accessToken, _ := GenerateAccessToken(user.ID)
-	refreshToken, _ := GenerateRefreshToken(user.ID)
+	refreshToken, _ := GenerateRefreshToken(session.ID)
+
+	session.RefreshToken = refreshToken
+	config.DB.Save(&session)
 
 	SetAuthCookies(c, accessToken, refreshToken)
 
