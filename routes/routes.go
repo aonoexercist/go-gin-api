@@ -14,7 +14,7 @@ func SetupRoutes(r *gin.Engine) {
 		authApi.POST("/login", auth.Login)
 	}
 
-	api := r.Group("/api")
+	api := r.Group("/services")
 	api.Use(auth.AuthMiddleware())
 	{
 		api.GET("/me", auth.Me)
