@@ -124,3 +124,20 @@ func Logout(c *gin.Context) {
 
 	c.JSON(200, gin.H{"message": "Logged out"})
 }
+
+func Me(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found in session"})
+		return
+	}
+
+	var user models.User
+
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User record not found in database"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
