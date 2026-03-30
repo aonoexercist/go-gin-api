@@ -9,22 +9,27 @@ import (
 )
 
 func Register(c *gin.Context) {
-	var input struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+	var user models.User
+
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 
-	c.BindJSON(&input)
+	c.BindJSON(&user)
 
-	hashedPassword, _ := HashPassword(input.Password)
-
-	user := models.User{
-		Email:    input.Email,
-		Password: hashedPassword,
+	hashedPassword, _err := HashPassword(user.Password)
+	if _err != nil {
+		c.JSON(500, gin.H{"error": "Internal server error"})
+		return
 	}
+	user.Password = hashedPassword
 
 	// save to DB (gorm)
-	config.DB.Create(&user)
+	if err := config.DB.Create(&user).Error; err != nil {
+		c.JSON(500, gin.H{"error": "Could not create user"})
+		return
+	}
 
 	c.JSON(200, gin.H{"message": "User created"})
 }
