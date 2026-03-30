@@ -3,35 +3,40 @@ package auth
 import (
 	"go-gin-api/config"
 	"go-gin-api/models"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 func Register(c *gin.Context) {
+	var input RegisterDTO
 	var user models.User
 
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.BindJSON(&user)
+	user = models.User{
+		Name:     input.Name,
+		Email:    input.Email,
+		Password: input.Password, // This will be hashed by the GORM Hook
+	}
 
-	hashedPassword, _err := HashPassword(user.Password)
-	if _err != nil {
-		c.JSON(500, gin.H{"error": "Internal server error"})
+	hashedPassword, err := HashPassword(user.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 	user.Password = hashedPassword
 
-	// save to DB (gorm)
 	if err := config.DB.Create(&user).Error; err != nil {
-		c.JSON(500, gin.H{"error": "Could not create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "User created"})
+	c.JSON(http.StatusOK, gin.H{"message": "User created"})
 }
 
 func Login(c *gin.Context) {
@@ -46,7 +51,7 @@ func Login(c *gin.Context) {
 	config.DB.Where("email = ?", input.Email).First(&user)
 
 	if !CheckPassword(input.Password, user.Password) {
-		c.JSON(401, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
