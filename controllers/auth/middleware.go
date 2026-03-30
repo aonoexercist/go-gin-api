@@ -22,6 +22,11 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			// "user_id" must match the key you used when creating the token
+			c.Set("user_id", claims["user_id"])
+		}
+
 		c.Next()
 	}
 }
