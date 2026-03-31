@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -9,7 +12,9 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenStr, err := c.Cookie("access_token")
 		if err != nil {
-			c.AbortWithStatus(401)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "missing_token",
+			})
 			return
 		}
 
@@ -17,15 +22,40 @@ func AuthMiddleware() gin.HandlerFunc {
 			return jwtKey, nil
 		})
 
-		if err != nil || !token.Valid {
-			c.AbortWithStatus(401)
+		if err != nil {
+			// ✅ v5 way: detect expired token
+			if errors.Is(err, jwt.ErrTokenExpired) {
+				c.Header("X-Auth-Error", "token_expired")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error": "token_expired",
+				})
+				return
+			}
+
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid_token",
+			})
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			// "user_id" must match the key you used when creating the token
-			c.Set("user_id", claims["user_id"])
+		if !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid_token",
+			})
+			return
 		}
+
+		// ✅ Extract claims safely
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid_token_claims",
+			})
+			return
+		}
+
+		userID := uint(claims["user_id"].(float64))
+		c.Set("user_id", userID)
 
 		c.Next()
 	}
