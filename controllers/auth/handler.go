@@ -4,10 +4,12 @@ import (
 	"go-gin-api/config"
 	"go-gin-api/models"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"google.golang.org/api/idtoken"
 )
 
 func Register(c *gin.Context) {
@@ -56,22 +58,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	session := models.Session{
-		UserID:    user.ID,
-		UserAgent: c.Request.UserAgent(),
-		IPAddress: c.ClientIP(),
-		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-	}
-
-	config.DB.Create(&session)
-
-	refreshToken, _ := GenerateRefreshToken(session.ID)
-	accessToken, _ := GenerateAccessToken(user.ID)
-
-	session.RefreshToken = refreshToken
-	config.DB.Save(&session)
-
-	SetAuthCookies(c, accessToken, refreshToken)
+	userLogin(c, user)
 
 	c.JSON(200, gin.H{
 		"message": "Login successful",
@@ -153,4 +140,64 @@ func Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func userLogin(c *gin.Context, user models.User) {
+	session := models.Session{
+		UserID:    user.ID,
+		UserAgent: c.Request.UserAgent(),
+		IPAddress: c.ClientIP(),
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
+	}
+
+	config.DB.Create(&session)
+
+	refreshToken, _ := GenerateRefreshToken(session.ID)
+	accessToken, _ := GenerateAccessToken(user.ID)
+
+	session.RefreshToken = refreshToken
+	config.DB.Save(&session)
+
+	SetAuthCookies(c, accessToken, refreshToken)
+}
+
+func GoogleLogin(c *gin.Context) {
+	var req models.GoogleAuthRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 🔥 Verify Google ID Token
+	payload, err := idtoken.Validate(ctx, req.Token, os.Getenv("GOOGLE_CLIENT_ID"))
+	if err != nil {
+		c.JSON(401, gin.H{"error": "invalid google token"})
+		return
+	}
+
+	// Extract data
+	email := payload.Claims["email"].(string)
+	name := payload.Claims["name"].(string)
+	googleID := payload.Subject
+
+	// Build your struct
+	userInfo := models.GoogleUserInfo{
+		ID:    googleID,
+		Email: email,
+		Name:  name,
+	}
+
+	// 🔥 Your existing logic
+	user, err := FindOrCreateUser(config.DB, userInfo)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to process user"})
+		return
+	}
+
+	userLogin(c, *user)
+
+	c.JSON(200, gin.H{"message": "login successful"})
 }
