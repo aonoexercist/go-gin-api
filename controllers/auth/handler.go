@@ -65,8 +65,8 @@ func Login(c *gin.Context) {
 
 	config.DB.Create(&session)
 
-	accessToken, _ := GenerateAccessToken(user.ID)
 	refreshToken, _ := GenerateRefreshToken(session.ID)
+	accessToken, _ := GenerateAccessToken(user.ID)
 
 	session.RefreshToken = refreshToken
 	config.DB.Save(&session)
