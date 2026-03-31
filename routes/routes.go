@@ -13,13 +13,13 @@ func SetupRoutes(r *gin.Engine) {
 		authApi.POST("/register", auth.Register)
 		authApi.POST("/login", auth.Login)
 		authApi.POST("/refresh", auth.Refresh)
+		authApi.POST("/logout", auth.Logout)
 	}
 
 	api := r.Group("/services")
 	api.Use(auth.AuthMiddleware())
 	{
 		api.GET("/me", auth.Me)
-		api.POST("/logout", auth.Logout)
 
 		api.POST("/todos", todo.CreateTodo)
 		api.GET("/todos", todo.GetTodos)
