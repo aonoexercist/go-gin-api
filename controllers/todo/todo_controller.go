@@ -10,6 +10,12 @@ import (
 
 // CREATE
 func CreateTodo(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found in session"})
+		return
+	}
+
 	var todo models.Todo
 
 	if err := c.ShouldBindJSON(&todo); err != nil {
@@ -17,14 +23,21 @@ func CreateTodo(c *gin.Context) {
 		return
 	}
 
+	todo.UserID = userID.(uint)
 	config.DB.Create(&todo)
 	c.JSON(http.StatusOK, todo)
 }
 
 // READ ALL
 func GetTodos(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found in session"})
+		return
+	}
+
 	var todos []models.Todo
-	config.DB.Find(&todos)
+	config.DB.Where("user_id = ?", userID.(uint)).Find(&todos)
 	c.JSON(http.StatusOK, todos)
 }
 
