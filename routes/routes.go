@@ -14,6 +14,7 @@ func SetupRoutes(r *gin.Engine) {
 		authApi.POST("/login", auth.Login)
 		authApi.POST("/refresh", auth.Refresh)
 		authApi.POST("/logout", auth.Logout)
+		authApi.POST("/google/login", auth.GoogleLogin)
 	}
 
 	api := r.Group("/services")
