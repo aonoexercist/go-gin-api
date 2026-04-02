@@ -7,6 +7,7 @@ type User struct {
 	Password string  `json:"-" binding:"required"`
 	GoogleID *string `gorm:"unique" json:"google_id,omitempty"`
 	Provider string  `json:"provider,omitempty"`
+	Roles    []Role  `gorm:"many2many:user_roles;" json:"roles,omitempty"`
 }
 
 type GoogleUserInfo struct {
@@ -22,4 +23,15 @@ type GoogleUserInfo struct {
 
 type GoogleAuthRequest struct {
 	Token string `json:"token"`
+}
+
+type Role struct {
+	ID          uint         `gorm:"primaryKey" json:"id"`
+	Name        string       `gorm:"unique" json:"name"`
+	Permissions []Permission `gorm:"many2many:role_permissions;" json:"permissions,omitempty"`
+}
+
+type Permission struct {
+	ID   uint   `gorm:"primaryKey" json:"id"`
+	Name string `gorm:"unique" json:"name"`
 }
