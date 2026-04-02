@@ -4,6 +4,7 @@ import (
 	"go-gin-api/config"
 	"go-gin-api/models"
 	"go-gin-api/routes"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,13 +15,15 @@ func main() {
 	config.ConnectDB()
 
 	// Auto migrate
-	config.DB.AutoMigrate(
+	if err := config.DB.AutoMigrate(
 		&models.Todo{},
 		&models.User{},
 		&models.Session{},
 		&models.Role{},
 		&models.Permission{},
-	)
+	); err != nil {
+		log.Fatalf("auto migrate failed: %v", err)
+	}
 
 	// Seed RBAC data
 	config.SeedRBAC(config.DB)
@@ -30,5 +33,7 @@ func main() {
 
 	routes.SetupRoutes(r)
 
-	r.Run(":8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("server failed to start: %v", err)
+	}
 }
