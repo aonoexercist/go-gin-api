@@ -50,21 +50,28 @@ func Login(c *gin.Context) {
 		Password string `json:"password"`
 	}
 
-	c.BindJSON(&input)
+	if err := c.BindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
 
 	var user models.User
-	config.DB.Where("email = ?", input.Email).First(&user)
+	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
 
 	if !CheckPassword(input.Password, user.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	userLogin(c, user)
+	if err := userLogin(c, user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not complete login"})
+		return
+	}
 
-	c.JSON(200, gin.H{
-		"message": "Login successful",
-	})
+	c.JSON(200, gin.H{"message": "Login successful"})
 }
 
 func Refresh(c *gin.Context) {
@@ -83,8 +90,17 @@ func Refresh(c *gin.Context) {
 		return
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-	sessionID := uint(claims["session_id"].(float64))
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(401, gin.H{"error": "Invalid token claims"})
+		return
+	}
+
+	sessionID, ok := claims["session_id"].(float64)
+	if !ok {
+		c.JSON(401, gin.H{"error": "Invalid session ID claim"})
+		return
+	}
 
 	var session models.Session
 	config.DB.First(&session, sessionID)
@@ -98,12 +114,24 @@ func Refresh(c *gin.Context) {
 	}
 
 	// generate new tokens
-	newRefreshToken, _ := GenerateRefreshToken(session.ID)
-	newAccessToken, _ := GenerateAccessToken(session.UserID)
+	newRefreshToken, err := GenerateRefreshToken(session.ID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "could not generate refresh token"})
+		return
+	}
+
+	newAccessToken, err := GenerateAccessToken(session.UserID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "could not generate access token"})
+		return
+	}
 
 	// rotate refresh token
 	session.RefreshToken = newRefreshToken
-	config.DB.Save(&session)
+	if err := config.DB.Save(&session).Error; err != nil {
+		c.JSON(500, gin.H{"error": "could not rotate refresh token"})
+		return
+	}
 
 	SetAuthCookies(c, newAccessToken, newRefreshToken)
 
@@ -111,16 +139,38 @@ func Refresh(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	token, _ := c.Cookie("refresh_token")
+	token, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(401, gin.H{"error": "No token"})
+		return
+	}
 
-	parsed, _ := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
+	if err != nil || !parsed.Valid {
+		c.JSON(401, gin.H{"error": "Invalid token"})
+		return
+	}
 
-	claims := parsed.Claims.(jwt.MapClaims)
-	sessionID := uint(claims["session_id"].(float64))
+	claims, ok := parsed.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(401, gin.H{"error": "Invalid token claims"})
+		return
+	}
 
-	config.DB.Delete(&models.Session{}, sessionID)
+	sessionIDf, ok := claims["session_id"].(float64)
+	if !ok {
+		c.JSON(401, gin.H{"error": "Invalid session id in token"})
+		return
+	}
+
+	sessionID := uint(sessionIDf)
+
+	if err := config.DB.Delete(&models.Session{}, sessionID).Error; err != nil {
+		c.JSON(500, gin.H{"error": "Could not delete session"})
+		return
+	}
 
 	ClearCookies(c)
 
@@ -144,7 +194,7 @@ func Me(c *gin.Context) {
 	c.JSON(http.StatusOK, ToUserDTO(user))
 }
 
-func userLogin(c *gin.Context, user models.User) {
+func userLogin(c *gin.Context, user models.User) error {
 	session := models.Session{
 		UserID:    user.ID,
 		UserAgent: c.Request.UserAgent(),
@@ -152,15 +202,27 @@ func userLogin(c *gin.Context, user models.User) {
 		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
 	}
 
-	config.DB.Create(&session)
+	if err := config.DB.Create(&session).Error; err != nil {
+		return err
+	}
 
-	refreshToken, _ := GenerateRefreshToken(session.ID)
-	accessToken, _ := GenerateAccessToken(user.ID)
+	refreshToken, err := GenerateRefreshToken(session.ID)
+	if err != nil {
+		return err
+	}
+
+	accessToken, err := GenerateAccessToken(user.ID)
+	if err != nil {
+		return err
+	}
 
 	session.RefreshToken = refreshToken
-	config.DB.Save(&session)
+	if err := config.DB.Save(&session).Error; err != nil {
+		return err
+	}
 
 	SetAuthCookies(c, accessToken, refreshToken)
+	return nil
 }
 
 func GoogleLogin(c *gin.Context) {
@@ -182,16 +244,24 @@ func GoogleLogin(c *gin.Context) {
 
 	fmt.Printf("Google token payload: %+v\n", payload) // Debugging line
 
-	// Extract data
-	email := payload.Claims["email"].(string)
-	name := payload.Claims["name"].(string)
+	// Extract data safely
+	emailI, ok := payload.Claims["email"].(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "invalid google token payload (email)"})
+		return
+	}
+	nameI, ok := payload.Claims["name"].(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "invalid google token payload (name)"})
+		return
+	}
 	googleID := payload.Subject
 
 	// Build your struct
 	userInfo := models.GoogleUserInfo{
 		ID:    googleID,
-		Email: email,
-		Name:  name,
+		Email: emailI,
+		Name:  nameI,
 	}
 
 	// 🔥 Your existing logic
@@ -201,7 +271,10 @@ func GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	userLogin(c, *user)
+	if err := userLogin(c, *user); err != nil {
+		c.JSON(500, gin.H{"error": "could not complete login"})
+		return
+	}
 
 	c.JSON(200, gin.H{"message": "login successful"})
 }
