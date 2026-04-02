@@ -14,9 +14,19 @@ func main() {
 	config.ConnectDB()
 
 	// Auto migrate
-	config.DB.AutoMigrate(&models.Todo{})
-	config.DB.AutoMigrate(&models.User{})
-	config.DB.AutoMigrate(&models.Session{})
+	config.DB.AutoMigrate(
+		&models.Todo{},
+		&models.User{},
+		&models.Session{},
+		&models.Role{},
+		&models.Permission{},
+	)
+
+	// Seed RBAC data
+	config.SeedRBAC(config.DB)
+
+	// Remove Expired Sessions
+	config.CleanupSessions(config.DB)
 
 	routes.SetupRoutes(r)
 
