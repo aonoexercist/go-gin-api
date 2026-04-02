@@ -1,4 +1,4 @@
-package rbac
+package middleware
 
 import (
 	"go-gin-api/config"
