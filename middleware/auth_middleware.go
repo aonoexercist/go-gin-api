@@ -71,3 +71,9 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// SetJWTKey sets the JWT signing key. Intended for tests to override the
+// package-level key without relying on environment variables.
+func SetJWTKey(key []byte) {
+	jwtKey = key
+}
