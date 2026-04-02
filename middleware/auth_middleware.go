@@ -1,12 +1,16 @@
-package auth
+package middleware
 
 import (
+	"os"
+
 	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+var jwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
