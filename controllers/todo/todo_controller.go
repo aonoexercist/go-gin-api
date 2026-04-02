@@ -23,8 +23,18 @@ func CreateTodo(c *gin.Context) {
 		return
 	}
 
-	todo.UserID = userID.(uint)
-	config.DB.Create(&todo)
+	uid, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id in session"})
+		return
+	}
+
+	todo.UserID = uid
+	if err := config.DB.Create(&todo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create todo"})
+		return
+	}
+
 	c.JSON(http.StatusOK, todo)
 }
 
@@ -37,7 +47,18 @@ func GetTodos(c *gin.Context) {
 	}
 
 	var todos []models.Todo
-	config.DB.Where("user_id = ?", userID.(uint)).Find(&todos)
+
+	uid, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id in session"})
+		return
+	}
+
+	if err := config.DB.Where("user_id = ?", uid).Find(&todos).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve todos"})
+		return
+	}
+
 	c.JSON(http.StatusOK, todos)
 }
 
@@ -64,8 +85,15 @@ func UpdateTodo(c *gin.Context) {
 		return
 	}
 
-	c.ShouldBindJSON(&todo)
-	config.DB.Save(&todo)
+	if err := c.ShouldBindJSON(&todo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := config.DB.Save(&todo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update todo"})
+		return
+	}
 
 	c.JSON(http.StatusOK, todo)
 }
@@ -73,7 +101,10 @@ func UpdateTodo(c *gin.Context) {
 // DELETE
 func DeleteTodo(c *gin.Context) {
 	id := c.Param("id")
-	config.DB.Delete(&models.Todo{}, id)
+	if err := config.DB.Delete(&models.Todo{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not delete todo"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Deleted"})
 }
