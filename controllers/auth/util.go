@@ -39,3 +39,8 @@ func GenerateRefreshToken(sessionID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtKey)
 }
+
+// SetJWTKey sets the package JWT signing key. Intended for tests.
+func SetJWTKey(key []byte) {
+	jwtKey = key
+}
