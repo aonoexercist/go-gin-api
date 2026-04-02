@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"go-gin-api/models"
 
 	"gorm.io/gorm"
@@ -11,6 +12,8 @@ func FindOrCreateUser(db *gorm.DB, info models.GoogleUserInfo) (*models.User, er
 
 	// 1️⃣ Try find by Google ID
 	if err := db.Where("google_id = ?", info.ID).First(&user).Error; err == nil {
+		// SaveUserData(&info, &user)
+
 		return &user, nil
 	}
 
@@ -20,6 +23,7 @@ func FindOrCreateUser(db *gorm.DB, info models.GoogleUserInfo) (*models.User, er
 		user.GoogleID = &info.ID
 		user.Provider = "google"
 
+		// SaveUserData(&info, &user)
 		if err := db.Save(&user).Error; err != nil {
 			return nil, err
 		}
@@ -35,9 +39,23 @@ func FindOrCreateUser(db *gorm.DB, info models.GoogleUserInfo) (*models.User, er
 		Provider: "google",
 	}
 
+	fmt.Printf("Attempting to create user: %+v\n", user)
+
 	if err := db.Create(&user).Error; err != nil {
 		return nil, err
 	}
 
 	return &user, nil
 }
+
+// func SaveUserData(info *models.GoogleUserInfo, user *models.User) error {
+// 	// Check if name is empty, then update it with Google's data
+// 	if user.Name == "" {
+// 		user.Name = info.Name
+// 	}
+
+// 	if err := config.DB.Save(&user).Error; err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
