@@ -15,7 +15,11 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 			return
 		}
 
-		userID := userIDVal.(uint)
+		userID, ok := userIDVal.(uint)
+		if !ok {
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid_user_id"})
+			return
+		}
 
 		var user models.User
 		if err := config.DB.Preload("Roles").First(&user, userID).Error; err != nil {
