@@ -58,8 +58,15 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		userID := uint(claims["user_id"].(float64))
-		c.Set("user_id", userID)
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "invalid_user_id_claim",
+			})
+			return
+		}
+
+		c.Set("user_id", uint(userID))
 
 		c.Next()
 	}
