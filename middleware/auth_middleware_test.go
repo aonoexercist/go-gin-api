@@ -40,7 +40,8 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 		t.Fatalf("user_id not set in context")
 	}
 
-	if uid.(uint) != 77 {
+	uidUint, ok := uid.(uint)
+	if !ok || uidUint != 77 {
 		t.Fatalf("expected user_id 77, got %v", uid)
 	}
 }
