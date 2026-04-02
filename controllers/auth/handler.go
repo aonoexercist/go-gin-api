@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"fmt"
 	"go-gin-api/config"
 	"go-gin-api/models"
+
 	"net/http"
 	"os"
 	"time"
@@ -134,12 +136,12 @@ func Me(c *gin.Context) {
 
 	var user models.User
 
-	if err := config.DB.First(&user, userID).Error; err != nil {
+	if err := config.DB.Preload("Roles.Permissions").First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User record not found in database"})
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, ToUserDTO(user))
 }
 
 func userLogin(c *gin.Context, user models.User) {
@@ -177,6 +179,8 @@ func GoogleLogin(c *gin.Context) {
 		c.JSON(401, gin.H{"error": "invalid google token"})
 		return
 	}
+
+	fmt.Printf("Google token payload: %+v\n", payload) // Debugging line
 
 	// Extract data
 	email := payload.Claims["email"].(string)
