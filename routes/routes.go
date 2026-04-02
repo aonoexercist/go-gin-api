@@ -5,6 +5,7 @@ import (
 	"go-gin-api/controllers/rbac"
 	"go-gin-api/controllers/todo"
 	"go-gin-api/controllers/user"
+	"go-gin-api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,7 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	api := r.Group("/services")
-	api.Use(auth.AuthMiddleware())
+	api.Use(middleware.AuthMiddleware())
 	{
 		api.GET("/me", auth.Me)
 
@@ -32,7 +33,7 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	adminApi := r.Group("/admin")
-	adminApi.Use(auth.AuthMiddleware(), rbac.RequireRole("super_admin"))
+	adminApi.Use(middleware.AuthMiddleware(), middleware.RequireRole("super_admin"))
 	{
 		usersApi := adminApi.Group("/users")
 		{
