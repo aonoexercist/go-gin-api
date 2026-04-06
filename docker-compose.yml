@@ -1,29 +1,32 @@
 services:
-  backend:
-    image: ghcr.io/aonoexercist/gin-api-backend:latest
-    container_name: gin-api
-    depends_on:
-      - db
-    environment:
-      DB_HOST: db
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
+  app:
+    build: .
+    container_name: gin_app
     ports:
       - "8080:8080"
+    depends_on:
+      - db
     env_file:
-      - .env
+      - .env.development
     restart: always
 
   db:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: postgres_db
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
     env_file:
-      - .env
+      - .env.development
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+
+  adminer:
+    image: adminer
+    container_name: adminer_ui
+    ports:
+      - "8081:8080"
+    restart: always
+
+volumes:
+  postgres_data:
