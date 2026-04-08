@@ -12,10 +12,8 @@ func SetAuthCookies(c *gin.Context, accessToken, refreshToken string) {
 	domain := os.Getenv("COOKIE_DOMAIN")
 	secure := os.Getenv("COOKIE_SECURE") == "true"
 
-	// Common settings to avoid repetition
-	// We use Lax for setting (so links from email/other sites work)
-	// and Strict for clearing (as seen in your previous snippet).
-	sameSite := http.SameSiteLaxMode
+	// 2. Set SameSite to None for cross-origin support
+	sameSite := http.SameSiteNoneMode
 
 	// Access Token (15 mins)
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -43,6 +41,8 @@ func SetAuthCookies(c *gin.Context, accessToken, refreshToken string) {
 }
 
 func ClearCookies(c *gin.Context) {
+	sameSite := http.SameSiteNoneMode
+
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "access_token",
 		Value:    "",
@@ -50,7 +50,7 @@ func ClearCookies(c *gin.Context) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sameSite,
 	})
 
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -60,6 +60,6 @@ func ClearCookies(c *gin.Context) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sameSite,
 	})
 }
