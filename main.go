@@ -5,6 +5,7 @@ import (
 	"go-gin-api/models"
 	"go-gin-api/routes"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -12,10 +13,15 @@ import (
 )
 
 func main() {
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		log.Fatal("FRONTEND_URL not set")
+	}
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://xercisdev.theworkpc.com"}, // frontend URL
+		AllowOrigins:     []string{frontendURL}, // frontend URL
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
