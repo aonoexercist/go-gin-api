@@ -13,12 +13,13 @@ import (
 )
 
 func main() {
+	r := gin.Default()
+	r.SetTrustedProxies([]string{"140.245.104.29"}) // Set your trusted proxy IP here
+
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		log.Fatal("FRONTEND_URL not set")
 	}
-
-	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{frontendURL}, // frontend URL
