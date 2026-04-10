@@ -73,14 +73,6 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        build-args: |
-          DB_USER=${{ secrets.DB_USER }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          DB_NAME=${{ secrets.DB_NAME }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}
-          COOKIE_SECURE=${{ secrets.COOKIE_SECURE }}
-          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
       
     - name: Delete old untagged images
       uses: actions/delete-package-versions@v5

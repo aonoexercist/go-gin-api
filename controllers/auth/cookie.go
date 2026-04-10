@@ -7,13 +7,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetAuthCookies(c *gin.Context, accessToken, refreshToken string) {
-	// 1. Pull values from environment
-	domain := os.Getenv("COOKIE_DOMAIN")
-	secure := os.Getenv("COOKIE_SECURE") == "true"
+func cookieConfig() (domain string, secure bool, sameSite http.SameSite) {
+	domain = os.Getenv("COOKIE_DOMAIN") // empty = current host only (safe for localhost)
+	secure = os.Getenv("GIN_MODE") == "release"
+	if secure {
+		sameSite = http.SameSiteNoneMode // cross-origin in prod (requires Secure=true)
+	} else {
+		sameSite = http.SameSiteLaxMode // dev: no Secure required
+	}
+	return
+}
 
-	// 2. Set SameSite to None for cross-origin support
-	sameSite := http.SameSiteNoneMode
+func SetAuthCookies(c *gin.Context, accessToken, refreshToken string) {
+	domain, secure, sameSite := cookieConfig()
 
 	// Access Token (15 mins)
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -41,15 +47,16 @@ func SetAuthCookies(c *gin.Context, accessToken, refreshToken string) {
 }
 
 func ClearCookies(c *gin.Context) {
-	sameSite := http.SameSiteNoneMode
+	domain, secure, sameSite := cookieConfig()
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "access_token",
 		Value:    "",
 		Path:     "/",
+		Domain:   domain,
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   secure,
 		SameSite: sameSite,
 	})
 
@@ -57,9 +64,10 @@ func ClearCookies(c *gin.Context) {
 		Name:     "refresh_token",
 		Value:    "",
 		Path:     "/",
+		Domain:   domain,
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   secure,
 		SameSite: sameSite,
 	})
 }
