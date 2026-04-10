@@ -5,8 +5,6 @@ import (
 	"go-gin-api/models"
 	"go-gin-api/routes"
 	"log"
-	"os"
-	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,21 +12,8 @@ import (
 
 func main() {
 	r := gin.Default()
-	r.SetTrustedProxies([]string{"140.245.104.29"}) // Set your trusted proxy IP here
 
-	frontendURL := os.Getenv("FRONTEND_URL")
-	if frontendURL == "" {
-		log.Fatal("FRONTEND_URL not set")
-	}
-
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{frontendURL}, // frontend URL
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true, // IMPORTANT for cookies
-		MaxAge:           12 * time.Hour,
-	}))
+	r.Use(cors.Default())
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
