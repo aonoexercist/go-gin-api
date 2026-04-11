@@ -8,7 +8,11 @@ import (
 )
 
 func cookieConfig() (domain string, secure bool, sameSite http.SameSite) {
-	domain = os.Getenv("COOKIE_DOMAIN") // empty = current host only (safe for localhost)
+	if os.Getenv("GIN_MODE") == "release" {
+		domain = ".theworkpc.com"
+	} else {
+		domain = os.Getenv("COOKIE_DOMAIN") // empty = current host only (safe for localhost)
+	}
 	secure = os.Getenv("GIN_MODE") == "release"
 	if secure {
 		sameSite = http.SameSiteNoneMode // cross-origin in prod (requires Secure=true)
