@@ -8,7 +8,11 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main .
+# We use $(date) inside the RUN command to get the timestamp of the build
+RUN go build -ldflags "-X main.BuildVersion=${VERSION} \
+                       -X main.GitCommit=${COMMIT} \
+                       -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+             -o main .
 
 # Run stage
 FROM alpine:latest
