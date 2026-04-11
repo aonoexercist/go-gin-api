@@ -85,3 +85,20 @@ jobs:
         owner: ${{ github.repository_owner }}
         # Only deletes versions that have no tags (overwritten ones)
         delete-only-untagged-versions: 'true'
+  
+  deploy:
+    needs: push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to production via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd next-gin-ops
+          docker pull ghcr.io/aonoexercist/gin-api-backend:latest
+          docker compose up -d backend
