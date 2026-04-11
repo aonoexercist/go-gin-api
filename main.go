@@ -5,9 +5,17 @@ import (
 	"go-gin-api/models"
 	"go-gin-api/routes"
 	"log"
+	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+)
+
+// These variables are populated at build time using -ldflags
+var (
+	BuildVersion = "dev"
+	BuildTime    = "unknown"
+	GitCommit    = "unknown"
 )
 
 func main() {
@@ -17,6 +25,15 @@ func main() {
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
+	})
+
+	// Health/Version check endpoint
+	r.GET("/version", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"version":    BuildVersion,
+			"build_time": BuildTime,
+			"commit":     GitCommit,
+		})
 	})
 
 	config.ConnectDB()
