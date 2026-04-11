@@ -6,6 +6,7 @@ import (
 	"go-gin-api/routes"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,18 @@ var (
 func main() {
 	r := gin.Default()
 
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		// Add both your dev and local URLs here
+		AllowOrigins: []string{
+			"https://xercisdev.theworkpc.com",
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+		},
+		AllowCredentials: true,
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		MaxAge:           12 * time.Hour,
+	}))
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
