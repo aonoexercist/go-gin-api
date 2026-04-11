@@ -15,7 +15,7 @@ func cookieConfig() (domain string, secure bool, sameSite http.SameSite) {
 	}
 	secure = os.Getenv("GIN_MODE") == "release"
 	if secure {
-		sameSite = http.SameSiteNoneMode // cross-origin in prod (requires Secure=true)
+		sameSite = http.SameSiteLaxMode // cross-origin in prod (requires Secure=true)
 	} else {
 		sameSite = http.SameSiteLaxMode // dev: no Secure required
 	}
