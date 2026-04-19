@@ -8,7 +8,10 @@ import (
 )
 
 func cookieConfig() (domain string, secure bool, sameSite http.SameSite) {
-	domain = os.Getenv("COOKIE_DOMAIN")
+	domain = "" // Default to current domain
+	if envDomain := os.Getenv("COOKIE_DOMAIN"); envDomain != "" {
+		domain = envDomain
+	}
 
 	secure = os.Getenv("GIN_MODE") == "release"
 	sameSite = http.SameSiteNoneMode
