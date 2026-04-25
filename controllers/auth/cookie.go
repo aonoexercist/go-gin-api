@@ -13,8 +13,12 @@ func cookieConfig() (domain string, secure bool, sameSite http.SameSite) {
 		domain = envDomain
 	}
 
+	sameSite = http.SameSiteLaxMode
+	if os.Getenv("GIN_MODE") == "release" {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	secure = os.Getenv("GIN_MODE") == "release"
-	sameSite = http.SameSiteNoneMode
 	return
 }
 
