@@ -11,6 +11,8 @@ import (
 )
 
 func SetupRoutes(r *gin.Engine) {
+	r.Use(middleware.ErrorHandler())
+
 	authApi := r.Group("/auth")
 	{
 		authApi.POST("/register", auth.Register)
