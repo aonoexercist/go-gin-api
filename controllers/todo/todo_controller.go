@@ -8,7 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CREATE
+// CreateTodo godoc
+// @Summary      Create a todo
+// @Description  Create a new todo item owned by the currently authenticated user
+// @Tags         todos
+// @Accept       json
+// @Produce      json
+// @Param        todo  body      models.Todo  true  "Todo to create"
+// @Success      200   {object}  models.Todo
+// @Failure      400   {object}  map[string]string
+// @Failure      401   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /services/todos [post]
 func CreateTodo(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -38,7 +49,16 @@ func CreateTodo(c *gin.Context) {
 	c.JSON(http.StatusOK, todo)
 }
 
-// READ ALL
+// GetTodos godoc
+// @Summary      List todos
+// @Description  Get all todos belonging to the currently authenticated user
+// @Tags         todos
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   models.Todo
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /services/todos [get]
 func GetTodos(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -62,7 +82,16 @@ func GetTodos(c *gin.Context) {
 	c.JSON(http.StatusOK, todos)
 }
 
-// READ ONE
+// GetTodo godoc
+// @Summary      Get a single todo
+// @Description  Get a todo by ID
+// @Tags         todos
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Todo ID"
+// @Success      200  {object}  models.Todo
+// @Failure      404  {object}  map[string]string
+// @Router       /services/todos/{id} [get]
 func GetTodo(c *gin.Context) {
 	var todo models.Todo
 	id := c.Param("id")
@@ -75,7 +104,19 @@ func GetTodo(c *gin.Context) {
 	c.JSON(http.StatusOK, todo)
 }
 
-// UPDATE
+// UpdateTodo godoc
+// @Summary      Update a todo
+// @Description  Update an existing todo by ID
+// @Tags         todos
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int          true  "Todo ID"
+// @Param        todo  body      models.Todo  true  "Updated todo fields"
+// @Success      200   {object}  models.Todo
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /services/todos/{id} [put]
 func UpdateTodo(c *gin.Context) {
 	var todo models.Todo
 	id := c.Param("id")
@@ -98,7 +139,16 @@ func UpdateTodo(c *gin.Context) {
 	c.JSON(http.StatusOK, todo)
 }
 
-// DELETE
+// DeleteTodo godoc
+// @Summary      Delete a todo
+// @Description  Delete a todo by ID
+// @Tags         todos
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Todo ID"
+// @Success      200  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /services/todos/{id} [delete]
 func DeleteTodo(c *gin.Context) {
 	id := c.Param("id")
 	if err := config.DB.Delete(&models.Todo{}, id).Error; err != nil {
