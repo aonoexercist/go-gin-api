@@ -84,6 +84,16 @@ func DeletePermission(c *gin.Context) {
 	}
 }
 
+// GetPermissionsByRole godoc
+// @Summary      Get permissions for a role
+// @Description  Get all permissions assigned to a specific role
+// @Tags         permissions
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Role ID"
+// @Success      200  {array}   models.Permission
+// @Failure      404  {object}  map[string]string
+// @Router       /admin/permissions/roles/{id}/permissions [get]
 func GetPermissionsByRole(c *gin.Context) {
 	var role models.Role
 	id := c.Param("id")
@@ -96,6 +106,9 @@ func GetPermissionsByRole(c *gin.Context) {
 	c.JSON(http.StatusOK, role.Permissions)
 }
 
+// SaveRoleWithPermissions finds or creates a role by name, finds or creates
+// each named permission, and replaces the role's permission associations
+// with that set. Not a route handler — internal helper used by SaveRole.
 func SaveRoleWithPermissions(roleName string, permNames []string) error {
 	var role models.Role
 
@@ -130,11 +143,22 @@ func SaveRoleWithPermissions(roleName string, permNames []string) error {
 	return nil
 }
 
+// SaveRoleRequest is the request body for SaveRole.
 type SaveRoleRequest struct {
 	Name        string   `json:"name" binding:"required"`
 	Permissions []string `json:"permissions" binding:"required"`
 }
 
+// SaveRole godoc
+// @Summary      Save a role with permissions
+// @Description  Find or create a role by name and set its permissions (creates permissions that don't yet exist)
+// @Tags         permissions
+// @Accept       json
+// @Produce      json
+// @Param        input  body      SaveRoleRequest  true  "Role name and permission names"
+// @Success      200    {object}  map[string]string
+// @Failure      400    {object}  map[string]string
+// @Router       /admin/permissions/roles/save [post]
 func SaveRole(c *gin.Context) {
 	var req SaveRoleRequest
 
