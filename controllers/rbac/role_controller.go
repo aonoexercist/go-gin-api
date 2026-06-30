@@ -10,6 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateRole godoc
+// @Summary      Create a role
+// @Description  Create a new role
+// @Tags         roles
+// @Accept       json
+// @Produce      json
+// @Param        role  body      models.Role  true  "Role to create"
+// @Success      201   {object}  models.Role
+// @Failure      400   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /admin/roles [post]
 func CreateRole(c *gin.Context) {
 	var role models.Role
 
@@ -26,6 +37,15 @@ func CreateRole(c *gin.Context) {
 	c.JSON(http.StatusCreated, role)
 }
 
+// GetRoles godoc
+// @Summary      List roles
+// @Description  Get all roles
+// @Tags         roles
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   models.Role
+// @Failure      500  {object}  map[string]string
+// @Router       /admin/roles [get]
 func GetRoles(c *gin.Context) {
 	var roles []models.Role
 
@@ -37,6 +57,16 @@ func GetRoles(c *gin.Context) {
 	c.JSON(http.StatusOK, roles)
 }
 
+// GetRole godoc
+// @Summary      Get a single role
+// @Description  Get a role by ID
+// @Tags         roles
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Role ID"
+// @Success      200  {object}  models.Role
+// @Failure      404  {object}  map[string]string
+// @Router       /admin/roles/{id} [get]
 func GetRole(c *gin.Context) {
 	var role models.Role
 	id := c.Param("id")
@@ -49,6 +79,19 @@ func GetRole(c *gin.Context) {
 	c.JSON(http.StatusOK, role)
 }
 
+// UpdateRole godoc
+// @Summary      Update a role
+// @Description  Update an existing role by ID
+// @Tags         roles
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int          true  "Role ID"
+// @Param        role  body      models.Role  true  "Updated role fields"
+// @Success      200   {object}  models.Role
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /admin/roles/{id} [put]
 func UpdateRole(c *gin.Context) {
 	var role models.Role
 	id := c.Param("id")
@@ -71,6 +114,17 @@ func UpdateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, role)
 }
 
+// DeleteRole godoc
+// @Summary      Delete a role
+// @Description  Delete a role by ID
+// @Tags         roles
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Role ID"
+// @Success      200  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /admin/roles/{id} [delete]
 func DeleteRole(c *gin.Context) {
 	var role models.Role
 	id := c.Param("id")
@@ -88,6 +142,9 @@ func DeleteRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Role deleted successfully"})
 }
 
+// UpdateUserRoles assigns the given role names to a user, creating any roles
+// that don't yet exist, then replaces the user's role associations.
+// Not a route handler — internal helper used by UpdateUserRolesHandler.
 func UpdateUserRoles(userID uint, roleNames []string) error {
 	var user models.User
 
@@ -117,6 +174,17 @@ func UpdateUserRoles(userID uint, roleNames []string) error {
 	return config.DB.Model(&user).Association("Roles").Replace(roles)
 }
 
+// UpdateUserRolesHandler godoc
+// @Summary      Assign roles to a user
+// @Description  Replace a user's roles using role names (creates roles that don't yet exist)
+// @Tags         roles
+// @Accept       json
+// @Produce      json
+// @Param        input  body      object{user_id=int,role_names=[]string}  true  "User ID and role names"
+// @Success      200    {object}  map[string]string
+// @Failure      400    {object}  map[string]string
+// @Failure      500    {object}  map[string]string
+// @Router       /admin/roles/assign [post]
 func UpdateUserRolesHandler(c *gin.Context) {
 	var req struct {
 		UserID    uint     `json:"user_id"`
