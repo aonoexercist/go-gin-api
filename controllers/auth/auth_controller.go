@@ -14,6 +14,17 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
+// Register godoc
+// @Summary      Register a new user
+// @Description  Create a new user account with name, email, and password
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      RegisterDTO  true  "Registration details"
+// @Success      200    {object}  map[string]string
+// @Failure      400    {object}  map[string]string
+// @Failure      500    {object}  map[string]string
+// @Router       /auth/register [post]
 func Register(c *gin.Context) {
 	var input RegisterDTO
 	var user models.User
@@ -44,6 +55,18 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User created"})
 }
 
+// Login godoc
+// @Summary      Login with email and password
+// @Description  Authenticate a user and set access/refresh token cookies
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      object{email=string,password=string}  true  "Login credentials"
+// @Success      200    {object}  map[string]string
+// @Failure      400    {object}  map[string]string
+// @Failure      401    {object}  map[string]string
+// @Failure      500    {object}  map[string]string
+// @Router       /auth/login [post]
 func Login(c *gin.Context) {
 	var input struct {
 		Email    string `json:"email"`
@@ -74,6 +97,16 @@ func Login(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Login successful"})
 }
 
+// Refresh godoc
+// @Summary      Refresh access token
+// @Description  Rotate the refresh token (from cookie) and issue new access/refresh tokens. Detects token reuse and revokes all sessions if detected.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/refresh [post]
 func Refresh(c *gin.Context) {
 	oldToken, err := c.Cookie("refresh_token")
 	if err != nil {
@@ -138,6 +171,16 @@ func Refresh(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Refreshed"})
 }
 
+// Logout godoc
+// @Summary      Logout
+// @Description  Invalidate the current session (from refresh token cookie) and clear auth cookies
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/logout [post]
 func Logout(c *gin.Context) {
 	token, err := c.Cookie("refresh_token")
 	if err != nil {
@@ -177,6 +220,16 @@ func Logout(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Logged out"})
 }
 
+// Me godoc
+// @Summary      Get current user
+// @Description  Get the currently authenticated user's profile (requires auth middleware to set user_id)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dto.UserResponseDTO
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Router       /services/me [get]
 func Me(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -194,6 +247,9 @@ func Me(c *gin.Context) {
 	c.JSON(http.StatusOK, ToUserDTO(user))
 }
 
+// userLogin creates a new session for the given user, generates access and
+// refresh tokens, persists the refresh token on the session, and sets the
+// auth cookies on the response. Not a route handler — internal helper.
 func userLogin(c *gin.Context, user models.User) error {
 	session := models.Session{
 		UserID:    user.ID,
@@ -225,6 +281,18 @@ func userLogin(c *gin.Context, user models.User) error {
 	return nil
 }
 
+// GoogleLogin godoc
+// @Summary      Login with Google
+// @Description  Verify a Google ID token, find or create the corresponding user, and log them in
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      models.GoogleAuthRequest  true  "Google ID token"
+// @Success      200    {object}  map[string]string
+// @Failure      400    {object}  map[string]string
+// @Failure      401    {object}  map[string]string
+// @Failure      500    {object}  map[string]string
+// @Router       /auth/google [post]
 func GoogleLogin(c *gin.Context) {
 	var req models.GoogleAuthRequest
 
