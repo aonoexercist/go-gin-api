@@ -153,7 +153,17 @@ func Refresh(c *gin.Context) {
 		return
 	}
 
-	newAccessToken, err := GenerateAccessToken(session.UserID)
+	isAdmin := false
+	if session.UserID != 0 {
+		var user models.User
+		if err := config.DB.First(&user, session.UserID).Error; err == nil {
+			if user.Email != "" && user.Email == os.Getenv("ADMIN_EMAIL") {
+				isAdmin = true
+			}
+		}
+	}
+
+	newAccessToken, err := GenerateAccessToken(session.UserID, isAdmin)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "could not generate access token"})
 		return
@@ -267,7 +277,12 @@ func userLogin(c *gin.Context, user models.User) error {
 		return err
 	}
 
-	accessToken, err := GenerateAccessToken(user.ID)
+	isAdmin := false
+	if user.Email != "" && user.Email == os.Getenv("ADMIN_EMAIL") {
+		isAdmin = true
+	}
+
+	accessToken, err := GenerateAccessToken(user.ID, isAdmin)
 	if err != nil {
 		return err
 	}
