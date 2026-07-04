@@ -29,7 +29,7 @@ func TestGenerateTokensClaims(t *testing.T) {
 	jwtKey = []byte("test-secret-key")
 
 	// Access token
-	access, err := GenerateAccessToken(42)
+	access, err := GenerateAccessToken(42, true)
 	if err != nil {
 		t.Fatalf("GenerateAccessToken error: %v", err)
 	}
@@ -48,6 +48,10 @@ func TestGenerateTokensClaims(t *testing.T) {
 
 	if claims["user_id"] == nil {
 		t.Fatalf("access token missing user_id claim")
+	}
+
+	if claims["is_admin"] == nil {
+		t.Fatalf("access token missing is_admin claim")
 	}
 
 	// Refresh token
