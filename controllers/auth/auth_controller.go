@@ -247,14 +247,72 @@ func Me(c *gin.Context) {
 		return
 	}
 
-	var user models.User
+	// 1. Check if the user is flagged as a SuperAdmin from the JWT context
+	isAdmin, _ := c.Get("is_admin")
+	if isAdminBool, ok := isAdmin.(bool); ok && isAdminBool {
+		// Fetch only basic user details without heavy relationship preloading
+		var user models.User
+		if err := config.DB.First(&user, userID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User record not found in database"})
+			return
+		}
 
+		// Return immediately with an explicit empty slice of permissions
+		response := UserResponseDTO{
+			ID:          user.ID,
+			Name:        user.Name,
+			Email:       user.Email,
+			Permissions: []string{}, // Empty! Next.js bypasses this via JWT isAdmin flag
+		}
+		c.JSON(http.StatusOK, response)
+		return
+	}
+
+	// 2. Fallback for regular users: Preload Roles and Permissions
+	var user models.User
 	if err := config.DB.Preload("Roles.Permissions").First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User record not found in database"})
 		return
 	}
 
-	c.JSON(http.StatusOK, ToUserDTO(user))
+	permissionMap := make(map[string]bool)
+
+	for _, role := range user.Roles {
+		if role.Name == "guest" {
+			for _, perm := range role.Permissions {
+				permissionMap[perm.Name] = true
+			}
+			continue
+		}
+
+		for _, perm := range role.Permissions {
+			var formattedPermission string
+
+			if role.Name == "user" && perm.Name == "print" {
+				formattedPermission = "user:print"
+			} else if role.Name == "user" {
+				formattedPermission = "todo:" + perm.Name
+			} else {
+				formattedPermission = role.Name + ":" + perm.Name
+			}
+
+			permissionMap[formattedPermission] = true
+		}
+	}
+
+	var permissions []string
+	for permName := range permissionMap {
+		permissions = append(permissions, permName)
+	}
+
+	response := UserResponseDTO{
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		Permissions: permissions,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // userLogin creates a new session for the given user, generates access and
