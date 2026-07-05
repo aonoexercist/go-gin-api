@@ -36,3 +36,10 @@ func ToUserDTO(user models.User) MeResponseDTO {
 		Roles: roles,
 	}
 }
+
+type UserResponseDTO struct {
+	ID          uint     `json:"id"`
+	Name        string   `json:"name"`
+	Email       string   `json:"email"`
+	Permissions []string `json:"permissions"` // e.g., ["todo:create", "todo:read", "user:print"]
+}
