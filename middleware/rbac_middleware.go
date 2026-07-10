@@ -54,9 +54,11 @@ func RequirePermission(permissionName string) gin.HandlerFunc {
 			return
 		}
 
-		if isAdmin, exists := c.Get("is_admin"); exists && isAdmin.(bool) == true {
-			c.Next()
-			return
+		if isAdminVal, exists := c.Get("is_admin"); exists {
+			if isAdmin, ok := isAdminVal.(bool); ok && isAdmin {
+				c.Next()
+				return
+			}
 		}
 
 		var user models.User
