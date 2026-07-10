@@ -74,3 +74,38 @@ func TestAuthMiddleware_ExpiredToken(t *testing.T) {
 		t.Fatalf("expected X-Auth-Error=token_expired, got %q", w.Header().Get("X-Auth-Error"))
 	}
 }
+
+func TestAuthMiddleware_SetsIsAdminFromClaims(t *testing.T) {
+	jwtKey = []byte("mw-test-key-3")
+
+	claims := jwt.MapClaims{"user_id": 33, "is_admin": true, "exp": time.Now().Add(5 * time.Minute).Unix()}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokStr, err := token.SignedString(jwtKey)
+	if err != nil {
+		t.Fatalf("sign token: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Add("Cookie", "access_token="+tokStr)
+	c.Request = req
+
+	handler := AuthMiddleware()
+	handler(c)
+
+	if c.IsAborted() {
+		t.Fatalf("middleware aborted unexpectedly: code %d body %s", w.Code, w.Body.String())
+	}
+
+	isAdmin, exists := c.Get("is_admin")
+	if !exists {
+		t.Fatalf("is_admin not set in context")
+	}
+
+	isAdminBool, ok := isAdmin.(bool)
+	if !ok || !isAdminBool {
+		t.Fatalf("expected is_admin=true in context, got %v", isAdmin)
+	}
+}
