@@ -68,6 +68,10 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		c.Set("user_id", uint(userID))
 
+		if isAdmin, ok := claims["is_admin"].(bool); ok {
+			c.Set("is_admin", isAdmin)
+		}
+
 		c.Next()
 	}
 }
