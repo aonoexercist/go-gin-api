@@ -59,18 +59,72 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.ToUserDTO(user))
 }
 
-// UpdateUserRoles godoc
-// @Summary      Update a user's roles
-// @Description  Replace the roles assigned to a user
+// UpdateUser godoc
+// @Summary      Update a user's name and email
+// @Description  Update basic profile fields for a user
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        id     path      int           true  "User ID"
-// @Param        roles  body      []models.Role true  "List of roles to assign"
-// @Success      200    {object}  dto.UserResponseDTO
-// @Failure      400    {object}  map[string]string
-// @Failure      404    {object}  map[string]string
-// @Failure      500    {object}  map[string]string
+// @Param        id    path      int                      true  "User ID"
+// @Param        user  body      dto.UpdateUserRequestDTO true  "Updated user fields"
+// @Success      200   {object}  dto.UserResponseDTO
+// @Failure      400   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /admin/users/{id} [put]
+func UpdateUser(c *gin.Context) {
+	var user models.User
+	id := c.Param("id")
+
+	if err := config.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var body dto.UpdateUserRequestDTO
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Optional: check email isn't already taken by another user
+	if body.Email != user.Email {
+		var existing models.User
+		if err := config.DB.Where("email = ? AND id != ?", body.Email, user.ID).First(&existing).Error; err == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email is already in use"})
+			return
+		}
+	}
+
+	user.Name = body.Name
+	user.Email = body.Email
+
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Reload with roles+permissions so the response DTO stays consistent with GetUsers/UpdateUserRoles
+	if err := config.DB.Preload("Roles.Permissions").First(&user, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.ToUserDTO(user))
+}
+
+// UpdateUserRoles godoc
+// @Summary      Update a user's roles
+// @Description  Replace the roles assigned to a user by role IDs
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int                        true  "User ID"
+// @Param        roleIds body      dto.AssignRolesRequestDTO true  "List of role IDs to assign"
+// @Success      200     {object}  dto.UserResponseDTO
+// @Failure      400     {object}  map[string]string
+// @Failure      404     {object}  map[string]string
+// @Failure      500     {object}  map[string]string
 // @Router       /admin/users/{id}/roles [put]
 func UpdateUserRoles(c *gin.Context) {
 	var user models.User
@@ -81,13 +135,35 @@ func UpdateUserRoles(c *gin.Context) {
 		return
 	}
 
-	var roles []models.Role
-	if err := c.ShouldBindJSON(&roles); err != nil {
+	var body dto.AssignRolesRequestDTO
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Look up the actual Role records for the given IDs
+	var roles []models.Role
+	if len(body.RoleIDs) > 0 {
+		if err := config.DB.Where("id IN ?", body.RoleIDs).Find(&roles).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Optional: guard against typos/nonexistent IDs by making sure
+		// every requested ID actually resolved to a role
+		if len(roles) != len(body.RoleIDs) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "One or more role IDs are invalid"})
+			return
+		}
+	}
+
 	if err := config.DB.Model(&user).Association("Roles").Replace(&roles); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Reload user with roles+permissions preloaded so the response DTO is accurate
+	if err := config.DB.Preload("Roles.Permissions").First(&user, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
