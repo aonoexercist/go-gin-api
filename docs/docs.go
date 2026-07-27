@@ -176,12 +176,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Permission",
+                        "description": "Permission Name Payload",
                         "name": "permission",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Permission"
+                            "$ref": "#/definitions/rbac.CreatePermissionRequest"
                         }
                     }
                 ],
@@ -1559,6 +1559,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "rbac.CreatePermissionRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
                 }
             }
         },
