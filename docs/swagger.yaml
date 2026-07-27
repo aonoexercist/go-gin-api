@@ -327,6 +327,61 @@ paths:
       summary: Create permission by role ID
       tags:
       - Permissions
+  /admin/permissions/roles/{id}/permissions/{permission_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Detaches a permission from a specific role using Role ID and Permission
+        ID.
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Permission ID
+        in: path
+        name: permission_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove permission from role
+      tags:
+      - Permissions
   /admin/permissions/roles/save:
     post:
       consumes:
