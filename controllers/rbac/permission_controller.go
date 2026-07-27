@@ -177,6 +177,57 @@ func DeletePermission(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Permission deleted successfully"})
 }
 
+// DeletePermissionFromRole godoc
+// @Summary Remove permission from role
+// @Description Detaches a permission from a specific role using Role ID and Permission ID.
+// @Tags Permissions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Role ID"
+// @Param permission_id path int true "Permission ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/permissions/roles/{id}/permissions/{permission_id} [delete]
+func DeletePermissionFromRole(c *gin.Context) {
+	roleId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role id"})
+		return
+	}
+
+	permissionId, err := strconv.Atoi(c.Param("permission_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid permission id"})
+		return
+	}
+
+	// 1. Verify Role exists
+	var role models.Role
+	if err := config.DB.First(&role, roleId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+		return
+	}
+
+	// 2. Verify Permission exists
+	var permission models.Permission
+	if err := config.DB.First(&permission, permissionId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "permission not found"})
+		return
+	}
+
+	// 3. Delete association (removes row from many-to-many join table)
+	if err := config.DB.Model(&role).Association("Permissions").Delete(&permission); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "permission removed from role successfully"})
+}
+
 // GetPermissionsByRole godoc
 // @Summary      Get permissions for a role
 // @Description  Get all permissions assigned to a specific role
