@@ -13,6 +13,15 @@ definitions:
     - name
     - password
     type: object
+  dto.AssignRolesRequestDTO:
+    properties:
+      roleIds:
+        items:
+          type: integer
+        type: array
+    required:
+    - roleIds
+    type: object
   dto.RoleDTO:
     properties:
       name:
@@ -21,6 +30,16 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  dto.UpdateUserRequestDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+    required:
+    - email
+    - name
     type: object
   dto.UserResponseDTO:
     properties:
@@ -668,25 +687,67 @@ paths:
       summary: Get a single user
       tags:
       - users
-  /admin/users/{id}/roles:
     put:
       consumes:
       - application/json
-      description: Replace the roles assigned to a user
+      description: Update basic profile fields for a user
       parameters:
       - description: User ID
         in: path
         name: id
         required: true
         type: integer
-      - description: List of roles to assign
+      - description: Updated user fields
         in: body
-        name: roles
+        name: user
         required: true
         schema:
-          items:
-            $ref: '#/definitions/models.Role'
-          type: array
+          $ref: '#/definitions/dto.UpdateUserRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a user's name and email
+      tags:
+      - users
+  /admin/users/{id}/roles:
+    put:
+      consumes:
+      - application/json
+      description: Replace the roles assigned to a user by role IDs
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: List of role IDs to assign
+        in: body
+        name: roleIds
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AssignRolesRequestDTO'
       produces:
       - application/json
       responses:
