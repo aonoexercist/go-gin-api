@@ -60,6 +60,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			permissionsApi.POST("/roles/:id/permissions", rbac.CreatePermissionByRoleId)
 			permissionsApi.GET("/roles/:id/permissions", rbac.GetPermissionsByRole)
+			permissionsApi.DELETE("/roles/:id/permissions/:permission_id", rbac.DeletePermissionFromRole)
 
 			permissionsApi.GET("/", rbac.GetPermissions)
 			permissionsApi.GET("/:id", rbac.GetPermission)
