@@ -885,11 +885,77 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Update basic profile fields for a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update a user's name and email",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated user fields",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateUserRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/admin/users/{id}/roles": {
             "put": {
-                "description": "Replace the roles assigned to a user",
+                "description": "Replace the roles assigned to a user by role IDs",
                 "consumes": [
                     "application/json"
                 ],
@@ -909,15 +975,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "List of roles to assign",
-                        "name": "roles",
+                        "description": "List of role IDs to assign",
+                        "name": "roleIds",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Role"
-                            }
+                            "$ref": "#/definitions/dto.AssignRolesRequestDTO"
                         }
                     }
                 ],
@@ -1552,6 +1615,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AssignRolesRequestDTO": {
+            "type": "object",
+            "required": [
+                "roleIds"
+            ],
+            "properties": {
+                "roleIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "dto.RoleDTO": {
             "type": "object",
             "properties": {
@@ -1563,6 +1640,21 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "dto.UpdateUserRequestDTO": {
+            "type": "object",
+            "required": [
+                "email",
+                "name"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
