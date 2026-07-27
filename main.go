@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// Seed RBAC data
-	config.SeedRBAC(config.DB)
+	// config.SeedRBAC(config.DB)
 
 	// Remove Expired Sessions
 	config.CleanupSessions(config.DB)
