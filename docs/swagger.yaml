@@ -73,6 +73,13 @@ definitions:
       user_id:
         type: integer
     type: object
+  rbac.CreatePermissionRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
   rbac.SaveRoleRequest:
     properties:
       name:
@@ -278,12 +285,12 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Permission
+      - description: Permission Name Payload
         in: body
         name: permission
         required: true
         schema:
-          $ref: '#/definitions/models.Permission'
+          $ref: '#/definitions/rbac.CreatePermissionRequest'
       produces:
       - application/json
       responses:
