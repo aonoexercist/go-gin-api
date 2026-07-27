@@ -42,6 +42,8 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			usersApi.GET("/", user.GetUsers)
 			usersApi.GET("/:id", user.GetUser)
+
+			usersApi.PUT("/:id", user.UpdateUser)
 			usersApi.PUT("/:id/roles", user.UpdateUserRoles)
 		}
 
