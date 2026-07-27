@@ -32,3 +32,12 @@ func ToUserDTO(user models.User) UserResponseDTO {
 		Roles: roles,
 	}
 }
+
+type UpdateUserRequestDTO struct {
+	Name  string `json:"name" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
+}
+
+type AssignRolesRequestDTO struct {
+	RoleIDs []uint `json:"roleIds" binding:"required"`
+}
