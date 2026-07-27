@@ -58,13 +58,14 @@ func SetupRoutes(r *gin.Engine) {
 		permissionsApi := adminApi.Group("/permissions")
 		permissionsApi.Use(middleware.RequirePermission("permission:manage"))
 		{
-			permissionsApi.POST("/", rbac.CreatePermissionByRoleId)
+			permissionsApi.POST("/roles/:id/permissions", rbac.CreatePermissionByRoleId)
+			permissionsApi.GET("/roles/:id/permissions", rbac.GetPermissionsByRole)
+
 			permissionsApi.GET("/", rbac.GetPermissions)
 			permissionsApi.GET("/:id", rbac.GetPermission)
 			permissionsApi.PUT("/:id", rbac.UpdatePermission)
 			permissionsApi.DELETE("/:id", rbac.DeletePermission)
 
-			permissionsApi.GET("/role/:id", rbac.GetPermissionsByRole)
 			permissionsApi.POST("/save", rbac.SaveRole)
 		}
 	}
