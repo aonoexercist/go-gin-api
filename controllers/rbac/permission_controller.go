@@ -4,19 +4,59 @@ import (
 	"go-gin-api/config"
 	"go-gin-api/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func CreatePermission(c *gin.Context) {
-	var permission models.Permission
+// CreatePermission godoc
+// @Summary Create permission by role ID
+// @Description Creates (or reuses) a permission and attaches it to a specific role.
+// @Tags Permissions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Role ID"
+// @Param permission body models.Permission true "Permission"
+// @Success 201 {object} models.Permission
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/permissions/roles/{id}/permissions [post]
+func CreatePermissionByRoleId(c *gin.Context) {
+	roleId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role id"})
+		return
+	}
 
-	if err := c.ShouldBindJSON(&permission); err != nil {
+	var role models.Role
+	if err := config.DB.First(&role, roleId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+		return
+	}
+
+	var input models.Permission
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := config.DB.Create(&permission).Error; err != nil {
+	// Find existing permission by name, or create it if it doesn't exist yet.
+	// This avoids violating the `unique` constraint on Permission.Name when
+	// multiple roles share the same permission.
+	var permission models.Permission
+	if err := config.DB.Where("name = ?", input.Name).First(&permission).Error; err != nil {
+		permission = models.Permission{Name: input.Name}
+		if err := config.DB.Create(&permission).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	// Attach the permission to the role via the many2many join table.
+	if err := config.DB.Model(&role).Association("Permissions").Append(&permission); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -24,6 +64,16 @@ func CreatePermission(c *gin.Context) {
 	c.JSON(http.StatusCreated, permission)
 }
 
+// GetPermissions godoc
+// @Summary List permissions
+// @Description Returns all permissions.
+// @Tags Permissions
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} models.Permission
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/permissions [get]
 func GetPermissions(c *gin.Context) {
 	var permissions []models.Permission
 
@@ -35,6 +85,17 @@ func GetPermissions(c *gin.Context) {
 	c.JSON(http.StatusOK, permissions)
 }
 
+// GetPermission godoc
+// @Summary Get permission
+// @Description Returns a permission by ID.
+// @Tags Permissions
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Permission ID"
+// @Success 200 {object} models.Permission
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /admin/permissions/{id} [get]
 func GetPermission(c *gin.Context) {
 	var permission models.Permission
 	id := c.Param("id")
@@ -47,6 +108,21 @@ func GetPermission(c *gin.Context) {
 	c.JSON(http.StatusOK, permission)
 }
 
+// UpdatePermission godoc
+// @Summary Update permission
+// @Description Updates an existing permission.
+// @Tags Permissions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Permission ID"
+// @Param permission body models.Permission true "Updated Permission"
+// @Success 200 {object} models.Permission
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/permissions/{id} [put]
 func UpdatePermission(c *gin.Context) {
 	var permission models.Permission
 	id := c.Param("id")
@@ -69,6 +145,18 @@ func UpdatePermission(c *gin.Context) {
 	c.JSON(http.StatusOK, permission)
 }
 
+// DeletePermission godoc
+// @Summary Delete permission
+// @Description Deletes a permission by ID.
+// @Tags Permissions
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Permission ID"
+// @Success 204
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/permissions/{id} [delete]
 func DeletePermission(c *gin.Context) {
 	var permission models.Permission
 	id := c.Param("id")
@@ -82,6 +170,8 @@ func DeletePermission(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Permission deleted successfully"})
 }
 
 // GetPermissionsByRole godoc
