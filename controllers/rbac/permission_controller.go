@@ -9,6 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type CreatePermissionRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
 // CreatePermission godoc
 // @Summary Create permission by role ID
 // @Description Creates (or reuses) a permission and attaches it to a specific role.
@@ -17,7 +21,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Role ID"
-// @Param permission body models.Permission true "Permission"
+// @Param permission body CreatePermissionRequest true "Permission Name Payload"
 // @Success 201 {object} models.Permission
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
@@ -37,15 +41,14 @@ func CreatePermissionByRoleId(c *gin.Context) {
 		return
 	}
 
-	var input models.Permission
+	// Bind to our input DTO instead of full models.Permission
+	var input CreatePermissionRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Find existing permission by name, or create it if it doesn't exist yet.
-	// This avoids violating the `unique` constraint on Permission.Name when
-	// multiple roles share the same permission.
 	var permission models.Permission
 	if err := config.DB.Where("name = ?", input.Name).First(&permission).Error; err != nil {
 		permission = models.Permission{Name: input.Name}
