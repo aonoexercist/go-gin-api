@@ -3,6 +3,7 @@ package dto
 import "go-gin-api/models"
 
 type RoleDTO struct {
+	ID          uint     `json:"id"`
 	Name        string   `json:"name"`
 	Permissions []string `json:"permissions"`
 }
@@ -22,7 +23,7 @@ func ToUserDTO(user models.User) UserResponseDTO {
 		for j, p := range r.Permissions {
 			permissions[j] = p.Name
 		}
-		roles[i] = RoleDTO{Name: r.Name, Permissions: permissions}
+		roles[i] = RoleDTO{ID: r.ID, Name: r.Name, Permissions: permissions}
 	}
 
 	return UserResponseDTO{
