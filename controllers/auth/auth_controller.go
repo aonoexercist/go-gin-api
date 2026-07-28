@@ -136,13 +136,27 @@ func Refresh(c *gin.Context) {
 	}
 
 	var session models.Session
-	config.DB.First(&session, sessionID)
+	if err := config.DB.First(&session, sessionID).Error; err != nil {
+		// session was deleted / never existed — do not treat as valid
+		ClearCookies(c)
+		c.JSON(401, gin.H{"error": "Session not found"})
+		return
+	}
 
 	// 🔥 Detect token reuse (VERY IMPORTANT)
 	if session.RefreshToken != oldToken {
 		// possible attack → revoke all sessions
 		config.DB.Where("user_id = ?", session.UserID).Delete(&models.Session{})
+		ClearCookies(c)
 		c.JSON(401, gin.H{"error": "Token reuse detected"})
+		return
+	}
+
+	// 🔥 Enforce session expiry — this was missing
+	if time.Now().After(session.ExpiresAt) {
+		config.DB.Delete(&session)
+		ClearCookies(c)
+		c.JSON(401, gin.H{"error": "Session expired"})
 		return
 	}
 
