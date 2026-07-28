@@ -5,6 +5,7 @@ import (
 	dto "go-gin-api/controllers"
 	"go-gin-api/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -169,4 +170,55 @@ func UpdateUserRoles(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.ToUserDTO(user))
+}
+
+// DeleteRoleFromUser godoc
+// @Summary Remove role from user
+// @Description Detaches a specific role from a user using User ID and Role ID.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param user_id path int true "User ID"
+// @Param role_id path int true "Role ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/users/{user_id}/roles/{role_id} [delete]
+func DeleteRoleFromUser(c *gin.Context) {
+	userId, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	roleId, err := strconv.Atoi(c.Param("role_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role id"})
+		return
+	}
+
+	// 1. Verify User exists
+	var user models.User
+	if err := config.DB.First(&user, userId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	// 2. Verify Role exists
+	var role models.Role
+	if err := config.DB.First(&role, roleId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+		return
+	}
+
+	// 3. Remove association in the many-to-many join table
+	if err := config.DB.Model(&user).Association("Roles").Delete(&role); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "role removed from user successfully"})
 }
