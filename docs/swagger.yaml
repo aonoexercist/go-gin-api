@@ -24,6 +24,8 @@ definitions:
     type: object
   dto.RoleDTO:
     properties:
+      id:
+        type: integer
       name:
         type: string
       permissions:
@@ -774,6 +776,60 @@ paths:
               type: string
             type: object
       summary: Update a user's roles
+      tags:
+      - users
+  /admin/users/{user_id}/roles/{role_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Detaches a specific role from a user using User ID and Role ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove role from user
       tags:
       - users
   /auth/google:
