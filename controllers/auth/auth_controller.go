@@ -262,7 +262,7 @@ func Me(c *gin.Context) {
 			ID:          user.ID,
 			Name:        user.Name,
 			Email:       user.Email,
-			Permissions: []string{}, // Empty! Next.js bypasses this via JWT isAdmin flag
+			Permissions: []string{}, // Next.js bypasses this via JWT isAdmin flag
 		}
 		c.JSON(http.StatusOK, response)
 		return
@@ -275,32 +275,18 @@ func Me(c *gin.Context) {
 		return
 	}
 
+	// Use a map to collect unique permission names (deduplication)
 	permissionMap := make(map[string]bool)
 
 	for _, role := range user.Roles {
-		if role.Name == "guest" {
-			for _, perm := range role.Permissions {
-				permissionMap[perm.Name] = true
-			}
-			continue
-		}
-
 		for _, perm := range role.Permissions {
-			var formattedPermission string
-
-			if role.Name == "user" && perm.Name == "print" {
-				formattedPermission = "user:print"
-			} else if role.Name == "user" {
-				formattedPermission = "todo:" + perm.Name
-			} else {
-				formattedPermission = role.Name + ":" + perm.Name
-			}
-
-			permissionMap[formattedPermission] = true
+			// Add ONLY the raw permission name (removes role prefix formatting)
+			permissionMap[perm.Name] = true
 		}
 	}
 
-	var permissions []string
+	// Convert map keys to slice
+	permissions := make([]string, 0, len(permissionMap))
 	for permName := range permissionMap {
 		permissions = append(permissions, permName)
 	}
