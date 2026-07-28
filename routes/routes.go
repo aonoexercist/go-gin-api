@@ -27,11 +27,11 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		api.GET("/me", auth.Me)
 
-		api.POST("/todos", middleware.RequirePermission("todo:create"), todo.CreateTodo)
-		api.GET("/todos", middleware.RequirePermission("todo:read"), todo.GetTodos)
-		api.GET("/todos/:id", middleware.RequirePermission("todo:read"), todo.GetTodo)
-		api.PUT("/todos/:id", middleware.RequirePermission("todo:update"), todo.UpdateTodo)
-		api.DELETE("/todos/:id", middleware.RequirePermission("todo:delete"), todo.DeleteTodo)
+		api.POST("/todos", todo.CreateTodo)
+		api.GET("/todos", todo.GetTodos)
+		api.GET("/todos/:id", todo.GetTodo)
+		api.PUT("/todos/:id", todo.UpdateTodo)
+		api.DELETE("/todos/:id", todo.DeleteTodo)
 	}
 
 	adminApi := r.Group("/admin")
