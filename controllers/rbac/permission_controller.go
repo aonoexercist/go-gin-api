@@ -219,10 +219,19 @@ func DeletePermissionFromRole(c *gin.Context) {
 		return
 	}
 
-	// 3. Delete association (removes row from many-to-many join table)
+	// 3. Remove association from the join table
 	if err := config.DB.Model(&role).Association("Permissions").Delete(&permission); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// 4. Check if any other role is still using this permission
+	var count int64
+	config.DB.Table("role_permissions").Where("permission_id = ?", permissionId).Count(&count)
+
+	// 5. If no other roles use it, delete from permissions table
+	if count == 0 {
+		config.DB.Delete(&permission)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "permission removed from role successfully"})
