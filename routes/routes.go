@@ -45,6 +45,8 @@ func SetupRoutes(r *gin.Engine) {
 
 			usersApi.PUT("/:id", user.UpdateUser)
 			usersApi.PUT("/:id/roles", user.UpdateUserRoles)
+
+			usersApi.DELETE("/:user_id/roles/:role_id", user.DeleteRoleFromUser)
 		}
 
 		rolesApi := adminApi.Group("/roles")
